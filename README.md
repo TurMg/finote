@@ -26,7 +26,6 @@ Data keuangan tersimpan dengan aman secara lokal menggunakan Isar NoSQL DB dan t
 | Platform | Berkas / Link Download | Keterangan |
 | :--- | :--- | :--- |
 | 🤖 **Android** | [Download APK Release (`.apk`)](../../releases/latest) | APK Ter-optimasi (`app-arm64-v8a-release.apk` ~34 MB) |
-| 🍏 **iOS (iPhone)** | [Download iOS Build Artifact](../../actions) | Hasil otomatis *GitHub Actions macOS Cloud Build* |
 
 ---
 
