@@ -22,7 +22,7 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: 🔧 Disable Swift Package Manager (Use CocoaPods)
+      - name: 🔧 Disable Swift Package Manager
         run: flutter config --no-enable-swift-package-manager
 
       - name: ⚡ Precache iOS Toolchain
@@ -32,9 +32,17 @@ jobs:
         run: flutter pub get
 
       - name: 🍏 Generate iOS Platform Files
+        run: flutter create --platforms=ios .
+
+      - name: 🔧 Set iOS Deployment Target to 15.0
         run: |
-          flutter create --platforms=ios .
-          cd ios && pod install && cd ..
+          cd ios
+          sed -i '' "s/platform :ios, '.*'/platform :ios, '15.0'/" Podfile
+          sed -i '' "s/# platform :ios, '.*'/platform :ios, '15.0'/" Podfile
+          echo "--- Podfile content ---"
+          cat Podfile
+          pod install
+          cd ..
 
       - name: 🧪 Run Unit Tests
         run: flutter test
