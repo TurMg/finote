@@ -1,8 +1,6 @@
 name: Build iOS App (Cloud macOS)
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -24,16 +22,24 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: ⚡ Precache iOS Artifacts
+      - name: 🔧 Disable Swift Package Manager (Use CocoaPods)
+        run: flutter config --no-enable-swift-package-manager
+
+      - name: ⚡ Precache iOS Toolchain
         run: flutter precache --ios
 
       - name: 📦 Install Dependencies
         run: flutter pub get
 
+      - name: 🍏 Generate iOS Platform Files
+        run: |
+          flutter create --platforms=ios .
+          cd ios && pod install && cd ..
+
       - name: 🧪 Run Unit Tests
         run: flutter test
 
-      - name: 🍏 Build iOS Runner (No Code Signing)
+      - name: 🏗️ Build iOS Runner (No Code Signing)
         run: flutter build ios --release --no-codesign
 
       - name: 📦 Compress iOS Runner Output
@@ -41,7 +47,7 @@ jobs:
           cd build/ios/iphoneos
           zip -r ../../../finote_ios_release.zip Runner.app
 
-      - name: 📤 Upload iOS Build Artifact to GitHub
+      - name: 📤 Upload iOS Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: finote-ios-release
