@@ -34,13 +34,11 @@ jobs:
       - name: 🍏 Generate iOS Platform Files
         run: flutter create --platforms=ios .
 
-      - name: 🔧 Set iOS Deployment Target to 15.0
+      - name: 🔧 Set iOS Deployment Target & Install Pods
         run: |
           cd ios
-          sed -i '' "s/platform :ios, '.*'/platform :ios, '15.0'/" Podfile
-          sed -i '' "s/# platform :ios, '.*'/platform :ios, '15.0'/" Podfile
-          echo "--- Podfile content ---"
-          cat Podfile
+          sed -i '' "s/platform :ios, '.*'/platform :ios, '16.0'/" Podfile
+          sed -i '' "s/# platform :ios, '.*'/platform :ios, '16.0'/" Podfile
           pod install
           cd ..
 
