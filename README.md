@@ -21,6 +21,15 @@ Data keuangan tersimpan dengan aman secara lokal menggunakan Isar NoSQL DB dan t
 
 ---
 
+## 📥 Download Aplikasi
+
+| Platform | Berkas / Link Download | Keterangan |
+| :--- | :--- | :--- |
+| 🤖 **Android** | [Download APK Release (`.apk`)](../../releases/latest) | APK Ter-optimasi (`app-arm64-v8a-release.apk` ~34 MB) |
+| 🍏 **iOS (iPhone)** | [Download iOS Build Artifact](../../actions) | Hasil otomatis *GitHub Actions macOS Cloud Build* |
+
+---
+
 ## 🌟 Fitur Unggulan
 
 - ⚡ **Offline-First & Fast Execution**: Menggunakan Isar NoSQL Database untuk pencatatan dan pencarian data berkecepatan 1–5 ms.
