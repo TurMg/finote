@@ -1,0 +1,78 @@
+# Miscellaneous & OS
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+migrate_working_dir/
+Thumbs.db
+Desktop.ini
+
+# Environment & Secrets / Credentials
+.env
+.env.*
+client_secret*.json
+credentials.json
+google-services.json
+GoogleService-Info.plist
+key.properties
+*.keystore
+*.jks
+
+# Android Studio & Gradle
+.gradle/
+local.properties
+/android/app/debug
+/android/app/profile
+/android/app/release
+/android/local.properties
+/android/key.properties
+
+# IDEs (IntelliJ & VS Code)
+*.iml
+*.ipr
+*.iws
+.idea/
+.vscode/
+
+# Flutter / Dart / Pub
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+.packages
+/build/
+
+# iOS & macOS Build Artifacts
+ios/Pods/
+ios/.symlinks/
+ios/Runner.xcworkspace
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/DerivedData/
+macos/Pods/
+macos/Runner.xcworkspace
+
+# Symbolication & Obfuscation
+app.*.symbols
+app.*.map.json
+
+# APK & Build Binaries
+*.apk
+*.aab
+*.tmp
+*.temp
+
+# Agent & Workspace Temporary Artifacts
+.agents/
+scratch/
+skills-lock.json
