@@ -25,18 +25,18 @@ Data keuangan tersimpan dengan aman secara lokal menggunakan Isar NoSQL DB dan t
 
 | Platform | Berkas / Link Download | Keterangan |
 | :--- | :--- | :--- |
-| 🤖 **Android** | [Download APK Release (`.apk`)](../../releases/latest) | APK Ter-optimasi (`app-arm64-v8a-release.apk` ~34 MB) |
-
+| 🤖 **Android APK** | [Download APK Release (`.apk`)](../../releases/latest) | APK Ter-optimasi (`app-arm64-v8a-release.apk` ~34 MB) |
 ---
 
 ## 🌟 Fitur Unggulan
 
 - ⚡ **Offline-First & Fast Execution**: Menggunakan Isar NoSQL Database untuk pencatatan dan pencarian data berkecepatan 1–5 ms.
+- 🔮 **Antarmuka Liquid & Micro-Animations**: Transisi perpindahan halaman Material 3 (*FadeThrough*), indikator opsi kapsul meluncur (*Sliding Segmented Control*), animasi angka memutar (*Animated Counter Text*), *Skeleton Shimmer Loading*, dan sentuhan getaran fisik (*Haptic Feedback*).
 - 🎙️ **Input Transaksi Suara Pintar (Voice Input)**: Mengenali perintah suara dalam Bahasa Indonesia secara otomatis menggunakan *Smart Indonesian Keyword Thesaurus (13 Domain Keuangan)*.
 - 📷 **Pemindai Struk OCR (Receipt Scanner)**: Mengekstrak total nominal dari foto struk belanja menggunakan Google ML-Kit Text Recognition & Spatial Candidate Scoring.
 - 🔄 **Sinkronisasi Otomatis 2 Arah (Google Sheets Sync)**: Fitur *Cloud Sync* pintar yang melakukan merge data tanpa mengganggu antarmuka pengguna (*non-blocking background sync*).
 - 🏷️ **Kelola Kategori Fleksibel**: Dukungan ikon Vector Material, Emoji, hingga foto custom dari galeri HP.
-- 🎨 **Antarmuka Premium & Kustomisasi**: Palet warna hangat khas (*Almond Cream & Espresso Charcoal*), custom username, dan launcher icon adaptif.
+- 🎨 **Antarmuka Premium & Kustomisasi**: Palet warna hangat khas (*Almond Cream & Espresso Charcoal*), kustomisasi profil, dan indikator tipe dinamis.
 
 ---
 
@@ -46,7 +46,7 @@ Finote dibangun mematuhi prinsip **CLEAN Architecture** dan **DRY (Don't Repeat 
 
 ```
 lib/
-├── core/                  # Color palette, routes, services (Sync, Settings, Google Sheets), utils
+├── core/                  # Color palette, routes, services (Sync, Settings, Google Sheets), reusable widgets (Shimmer, Counter, Segmented)
 ├── features/
 │   ├── category/          # Feature Kelola Kategori (Data, Domain, Presentation - BLoC)
 │   ├── profile/           # Feature Profile & Pengaturan Pengguna
@@ -60,7 +60,7 @@ lib/
 - **OCR Engine**: `google_mlkit_text_recognition`
 - **Speech Recognition**: `speech_to_text`
 - **Cloud Backup**: `googleapis` & `google_sign_in` (Google Sheets v4 & Drive v3 API)
-- **Navigation**: `go_router`
+- **Navigation**: `go_router` (Material 3 Page Transitions)
 - **Dependency Injection**: `get_it`
 
 ---
@@ -90,11 +90,12 @@ lib/
    flutter run
    ```
 
-4. **Build APK Rilis (Ter-optimasi)**:
+4. **Build APK Rilis & App Bundle**:
    ```bash
    flutter build apk --release --split-per-abi
+   flutter build appbundle
    ```
-   *File APK rilis untuk Android modern dapat ditemukan di `build/app/outputs/flutter-apk/app-arm64-v8a-release.apk`.*
+   *File APK rilis dapat ditemukan di `build/app/outputs/flutter-apk/app-arm64-v8a-release.apk` dan App Bundle di `build/app/outputs/bundle/release/app-release.aab`.*
 
 ---
 
