@@ -3,6 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import '../../../../core/constants/colors.dart';
+import '../../../../core/widgets/animated_counter_text.dart';
+import '../../../../core/widgets/bouncing_button.dart';
+import '../../../../core/widgets/floating_empty_state.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
+import '../../../../core/widgets/sliding_segmented_control.dart';
+import '../../../../core/widgets/staggered_item_wrapper.dart';
 import '../../domain/entities/transaction.dart';
 import '../bloc/history/history_bloc.dart';
 import '../bloc/history/history_event.dart';
@@ -88,10 +94,18 @@ class _RiwayatViewState extends State<RiwayatView> {
                         padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
                         child: Container(
                           height: 48,
+                          clipBehavior: Clip.antiAlias,
                           decoration: BoxDecoration(
                             color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(16),
                             border: Border.all(color: AppColors.cardBorder.withOpacity(0.6)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.03),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
                           child: TextField(
                             controller: _searchController,
@@ -119,79 +133,40 @@ class _RiwayatViewState extends State<RiwayatView> {
                         ),
                       ),
 
-                      // Tipe Filter (Segmented Control)
+                      // Tipe Filter (Sliding Segmented Control)
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Container(
+                        child: SlidingSegmentedControl<TransactionTypeFilter>(
+                          selectedValue: state.typeFilter,
+                          items: TransactionTypeFilter.values,
                           height: 40,
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceSubtle,
-                            borderRadius: BorderRadius.circular(22),
-                          ),
-                          child: Row(
-                            children: [
-                              _buildSegmentedTab(
-                                context: context,
-                                label: 'Semua',
-                                type: TransactionTypeFilter.semua,
-                                currentType: state.typeFilter,
-                              ),
-                              _buildSegmentedTab(
-                                context: context,
-                                label: 'Pemasukan',
-                                type: TransactionTypeFilter.pemasukan,
-                                currentType: state.typeFilter,
-                              ),
-                              _buildSegmentedTab(
-                                context: context,
-                                label: 'Pengeluaran',
-                                type: TransactionTypeFilter.pengeluaran,
-                                currentType: state.typeFilter,
-                              ),
-                            ],
-                          ),
+                          borderRadius: 22,
+                          labelBuilder: (type) {
+                            switch (type) {
+                              case TransactionTypeFilter.semua:
+                                return 'Semua';
+                              case TransactionTypeFilter.pemasukan:
+                                return 'Pemasukan';
+                              case TransactionTypeFilter.pengeluaran:
+                                return 'Pengeluaran';
+                            }
+                          },
+                          onChanged: (type) => context.read<HistoryBloc>().add(TypeFilterChanged(type)),
                         ),
                       ),
 
                       const SizedBox(height: 12),
 
-                      // Periode Filter Chips (Semua, Harian, Mingguan, Bulanan)
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
+                      // Periode Filter Chips (Sliding Segmented Control)
+                      Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Row(
-                          children: FilterMode.values.map((mode) {
-                            final isActive = state.filterMode == mode;
-                            String label = mode.name[0].toUpperCase() + mode.name.substring(1);
-
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 6),
-                              child: GestureDetector(
-                                onTap: () => context.read<HistoryBloc>().add(FilterHistoryChanged(mode)),
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 200),
-                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-                                  decoration: BoxDecoration(
-                                    color: isActive ? AppColors.primary : AppColors.surfaceSubtle.withOpacity(0.6),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color: isActive ? AppColors.primary : Colors.transparent,
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    label,
-                                    style: TextStyle(
-                                      color: isActive ? Colors.white : AppColors.textSecondary,
-                                      fontWeight: isActive ? FontWeight.bold : FontWeight.w600,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          }).toList(),
+                        child: SlidingSegmentedControl<FilterMode>(
+                          selectedValue: state.filterMode,
+                          items: FilterMode.values,
+                          height: 36,
+                          borderRadius: 18,
+                          labelBuilder: (mode) => mode.name[0].toUpperCase() + mode.name.substring(1),
+                          onChanged: (mode) => context.read<HistoryBloc>().add(FilterHistoryChanged(mode)),
                         ),
                       ),
 
@@ -200,7 +175,11 @@ class _RiwayatViewState extends State<RiwayatView> {
                       // Main List Content
                       Expanded(
                         child: state.isLoading
-                            ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                            ? ListView.builder(
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: 6,
+                                itemBuilder: (context, index) => const SkeletonCardTile(),
+                              )
                             : state.allTransactions.isEmpty
                                 ? _buildEmptyState()
                                 : _buildContent(context, state, catState),
@@ -216,63 +195,11 @@ class _RiwayatViewState extends State<RiwayatView> {
     );
   }
 
-  Widget _buildSegmentedTab({
-    required BuildContext context,
-    required String label,
-    required TransactionTypeFilter type,
-    required TransactionTypeFilter currentType,
-  }) {
-    final isActive = type == currentType;
-
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => context.read<HistoryBloc>().add(TypeFilterChanged(type)),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: isActive ? AppColors.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(22),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: isActive ? FontWeight.bold : FontWeight.w600,
-              color: isActive ? Colors.white : AppColors.textSecondary,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.receipt_long_outlined,
-            size: 72,
-            color: AppColors.textSecondary.withOpacity(0.3),
-          ),
-          const SizedBox(height: 14),
-          const Text(
-            'Belum Ada Transaksi',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'Catat transaksi pertama Anda!',
-            style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-          ),
-        ],
-      ),
+    return const FloatingEmptyState(
+      icon: Icons.receipt_long_outlined,
+      title: 'Belum Ada Transaksi',
+      subtitle: 'Catat transaksi pertama Anda!',
     );
   }
 
@@ -310,14 +237,10 @@ class _RiwayatViewState extends State<RiwayatView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (state.filteredTransactions.isEmpty)
-            const Padding(
-              padding: EdgeInsets.only(top: 40),
-              child: Center(
-                child: Text(
-                  'Tidak ada transaksi pada filter ini.',
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 14, fontWeight: FontWeight.w500),
-                ),
-              ),
+            const FloatingEmptyState(
+              icon: Icons.search_off_rounded,
+              title: 'Tidak Ada Transaksi',
+              subtitle: 'Tidak ditemukan transaksi yang cocok dengan filter.',
             )
           else ...[
             // Filter Summary Banner
@@ -340,8 +263,13 @@ class _RiwayatViewState extends State<RiwayatView> {
                         'Total: ',
                         style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
                       ),
-                      Text(
-                        '${totalFilteredNominal >= 0 ? '+' : ''}${NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(totalFilteredNominal)}',
+                      AnimatedCounterText(
+                        value: totalFilteredNominal,
+                        formatter: (val) {
+                          final prefix = val >= 0 ? '+' : '-';
+                          final absVal = val.abs();
+                          return '$prefix${NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(absVal)}';
+                        },
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
@@ -383,8 +311,13 @@ class _RiwayatViewState extends State<RiwayatView> {
                                 letterSpacing: 0.8,
                               ),
                             ),
-                            Text(
-                              '${dailyTotal >= 0 ? '+' : ''}${NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(dailyTotal)}',
+                            AnimatedCounterText(
+                              value: dailyTotal,
+                              formatter: (val) {
+                                final prefix = val >= 0 ? '+' : '-';
+                                final absVal = val.abs();
+                                return '$prefix${NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(absVal)}';
+                              },
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
@@ -406,30 +339,35 @@ class _RiwayatViewState extends State<RiwayatView> {
                             final idx = itemEntry.key;
                             final t = itemEntry.value;
 
-                            return Column(
-                              children: [
-                                TransactionCardTile(
-                                  transaction: t,
-                                  categoryState: catState,
-                                  isGrouped: true,
-                                  onTap: () {
-                                    showModalBottomSheet(
-                                      context: context,
-                                      isScrollControlled: true,
-                                      useRootNavigator: true,
-                                      backgroundColor: Colors.transparent,
-                                      builder: (context) => TransactionDetailBottomSheet(transaction: t),
-                                    );
-                                  },
-                                ),
-                                if (idx < items.length - 1)
-                                  Divider(
-                                    height: 1,
-                                    thickness: 1,
-                                    color: AppColors.divider.withOpacity(0.4),
-                                    indent: 70,
+                            return StaggeredItemWrapper(
+                              index: idx,
+                              child: Column(
+                                children: [
+                                  BouncingButton(
+                                    onTap: () {
+                                      showModalBottomSheet(
+                                        context: context,
+                                        isScrollControlled: true,
+                                        useRootNavigator: true,
+                                        backgroundColor: Colors.transparent,
+                                        builder: (context) => TransactionDetailBottomSheet(transaction: t),
+                                      );
+                                    },
+                                    child: TransactionCardTile(
+                                      transaction: t,
+                                      categoryState: catState,
+                                      isGrouped: true,
+                                    ),
                                   ),
-                              ],
+                                  if (idx < items.length - 1)
+                                    Divider(
+                                      height: 1,
+                                      thickness: 1,
+                                      color: AppColors.divider.withOpacity(0.4),
+                                      indent: 70,
+                                    ),
+                                ],
+                              ),
                             );
                           }).toList(),
                         ),

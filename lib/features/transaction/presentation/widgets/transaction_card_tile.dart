@@ -8,14 +8,14 @@ import '../../../category/presentation/bloc/category_state.dart';
 class TransactionCardTile extends StatelessWidget {
   final Transaction transaction;
   final CategoryState categoryState;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final bool isGrouped;
 
   const TransactionCardTile({
     super.key,
     required this.transaction,
     required this.categoryState,
-    required this.onTap,
+    this.onTap,
     this.isGrouped = false,
   });
 

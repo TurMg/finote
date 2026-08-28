@@ -3,6 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/colors.dart';
+import '../../../../core/widgets/animated_counter_text.dart';
+import '../../../../core/widgets/bouncing_button.dart';
+import '../../../../core/widgets/floating_empty_state.dart';
+import '../../../../core/widgets/sliding_segmented_control.dart';
+import '../../../../core/widgets/staggered_item_wrapper.dart';
 import '../../../../core/widgets/category_icon_widget.dart';
 import '../../domain/entities/transaction.dart';
 import '../bloc/transaction_bloc.dart';
@@ -242,21 +247,24 @@ class _StatistikViewState extends State<StatistikView> {
             // 1. Period Selector Tabs (Harian, Mingguan, Bulanan, Tahunan)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Container(
+              child: SlidingSegmentedControl<StatPeriodMode>(
+                selectedValue: _periodMode,
+                items: StatPeriodMode.values,
                 height: 40,
-                padding: const EdgeInsets.all(3),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceSubtle,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  children: [
-                    _buildPeriodTab('Harian', StatPeriodMode.harian),
-                    _buildPeriodTab('Mingguan', StatPeriodMode.mingguan),
-                    _buildPeriodTab('Bulanan', StatPeriodMode.bulanan),
-                    _buildPeriodTab('Tahunan', StatPeriodMode.tahunan),
-                  ],
-                ),
+                borderRadius: 20,
+                labelBuilder: (mode) {
+                  switch (mode) {
+                    case StatPeriodMode.harian:
+                      return 'Harian';
+                    case StatPeriodMode.mingguan:
+                      return 'Mingguan';
+                    case StatPeriodMode.bulanan:
+                      return 'Bulanan';
+                    case StatPeriodMode.tahunan:
+                      return 'Tahunan';
+                  }
+                },
+                onChanged: (mode) => setState(() => _periodMode = mode),
               ),
             ),
 
@@ -266,55 +274,61 @@ class _StatistikViewState extends State<StatistikView> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   // Period Navigator
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.cardBorder.withOpacity(0.5)),
-                    ),
-                    child: Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.chevron_left_rounded, size: 20, color: AppColors.textPrimary),
-                          onPressed: _previousPeriod,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                        ),
-                        Text(
-                          _periodTitleText,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppColors.cardBorder.withOpacity(0.5)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.chevron_left_rounded, size: 18, color: AppColors.textPrimary),
+                            onPressed: _previousPeriod,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                           ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.chevron_right_rounded, size: 20, color: AppColors.textPrimary),
-                          onPressed: _nextPeriod,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                        ),
-                      ],
+                          Expanded(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                _periodTitleText,
+                                style: const TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.textPrimary),
+                            onPressed: _nextPeriod,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
+                  const SizedBox(width: 8),
 
                   // Type Toggle (Pengeluaran / Pemasukan)
-                  Container(
-                    height: 38,
-                    padding: const EdgeInsets.all(3),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceSubtle,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Row(
-                      children: [
-                        _buildTypeTab('Pengeluaran', 'EXPENSE'),
-                        _buildTypeTab('Pemasukan', 'INCOME'),
-                      ],
+                  SizedBox(
+                    width: 170,
+                    child: SlidingSegmentedControl<String>(
+                      selectedValue: _selectedType,
+                      items: const ['EXPENSE', 'INCOME'],
+                      height: 38,
+                      borderRadius: 14,
+                      activeColor: _selectedType == 'INCOME' ? AppColors.incomeGreen : AppColors.expenseRed,
+                      labelBuilder: (t) => t == 'EXPENSE' ? 'Pengeluaran' : 'Pemasukan',
+                      onChanged: (t) => setState(() => _selectedType = t),
                     ),
                   ),
                 ],
@@ -389,8 +403,9 @@ class _StatistikViewState extends State<StatistikView> {
                                           const SizedBox(height: 4),
                                           Padding(
                                             padding: const EdgeInsets.symmetric(horizontal: 16),
-                                            child: Text(
-                                              _formatRupiah(grandTotal),
+                                            child: AnimatedCounterText(
+                                              value: grandTotal,
+                                              formatter: _formatRupiah,
                                               style: TextStyle(
                                                 fontSize: 18,
                                                 fontWeight: FontWeight.bold,
@@ -399,9 +414,6 @@ class _StatistikViewState extends State<StatistikView> {
                                                     : AppColors.textPrimary,
                                                 letterSpacing: -0.5,
                                               ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              textAlign: TextAlign.center,
                                             ),
                                           ),
                                           const SizedBox(height: 2),
@@ -451,7 +463,12 @@ class _StatistikViewState extends State<StatistikView> {
                           itemCount: categoryDataList.length,
                           itemBuilder: (context, index) {
                             final data = categoryDataList[index];
-                            return _buildCategoryStatTile(data);
+                            return StaggeredItemWrapper(
+                              index: index,
+                              child: BouncingButton(
+                                child: _buildCategoryStatTile(data),
+                              ),
+                            );
                           },
                         ),
 
@@ -468,53 +485,7 @@ class _StatistikViewState extends State<StatistikView> {
     );
   }
 
-  Widget _buildPeriodTab(String label, StatPeriodMode mode) {
-    final isActive = _periodMode == mode;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _periodMode = mode),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          decoration: BoxDecoration(
-            color: isActive ? AppColors.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-              color: isActive ? Colors.white : AppColors.textSecondary,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
-  Widget _buildTypeTab(String label, String type) {
-    final isActive = _selectedType == type;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedType = type),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: isActive ? AppColors.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(11),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 11.5,
-            fontWeight: isActive ? FontWeight.bold : FontWeight.w600,
-            color: isActive ? Colors.white : AppColors.textSecondary,
-          ),
-        ),
-      ),
-    );
-  }
 
   Widget _buildCategoryStatTile(CategoryStatData data) {
     return Container(
@@ -579,14 +550,21 @@ class _StatistikViewState extends State<StatistikView> {
             ],
           ),
           const SizedBox(height: 10),
-          // Progress bar percentage share
+          // Progress bar percentage share dengan animasi smooth
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: data.percentage / 100,
-              minHeight: 6,
-              backgroundColor: AppColors.surfaceSubtle,
-              valueColor: AlwaysStoppedAnimation<Color>(data.color),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween<double>(begin: 0.0, end: data.percentage / 100),
+              duration: const Duration(milliseconds: 600),
+              curve: Curves.easeOutCubic,
+              builder: (context, animatedVal, _) {
+                return LinearProgressIndicator(
+                  value: animatedVal,
+                  minHeight: 6,
+                  backgroundColor: AppColors.surfaceSubtle,
+                  valueColor: AlwaysStoppedAnimation<Color>(data.color),
+                );
+              },
             ),
           ),
         ],
@@ -595,35 +573,11 @@ class _StatistikViewState extends State<StatistikView> {
   }
 
   Widget _buildEmptyState() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 60),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.08),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.pie_chart_outline_rounded, size: 48, color: AppColors.primary),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Belum Ada Data Statistik',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Tidak ada transaksi ${_selectedType == 'INCOME' ? 'pemasukan' : 'pengeluaran'} pada periode ${_periodTitleText.toLowerCase()}.',
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-          ),
-        ],
-      ),
+    return FloatingEmptyState(
+      icon: Icons.pie_chart_outline_rounded,
+      title: 'Belum Ada Data Statistik',
+      subtitle: 'Tidak ada transaksi ${_selectedType == 'INCOME' ? 'pemasukan' : 'pengeluaran'} pada periode ${_periodTitleText.toLowerCase()}.',
+      iconColor: AppColors.primary,
     );
   }
 }

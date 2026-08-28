@@ -16,6 +16,7 @@ class VoiceConfirmationStageView extends StatelessWidget {
   final ValueChanged<String> onNominalChanged;
   final String selectedCategory;
   final ValueChanged<String> onCategorySelected;
+  final VoidCallback onAddCategory;
   final TextEditingController noteController;
   final VoidCallback onSaveTransaction;
   final VoidCallback onRetryVoice;
@@ -30,6 +31,7 @@ class VoiceConfirmationStageView extends StatelessWidget {
     required this.onNominalChanged,
     required this.selectedCategory,
     required this.onCategorySelected,
+    required this.onAddCategory,
     required this.noteController,
     required this.onSaveTransaction,
     required this.onRetryVoice,
@@ -173,28 +175,27 @@ class VoiceConfirmationStageView extends StatelessWidget {
                   .toList();
               final categories = filtered.isNotEmpty ? filtered : catState.categories;
 
+              // Append the "+" add chip to the item list
+              final items = <Widget>[
+                ...categories.map(_buildCategoryChip),
+                _buildAddCategoryChip(),
+              ];
+
               final categoryRows = <Widget>[];
-              for (int i = 0; i < categories.length; i += 4) {
-                final chunk = categories.sublist(
-                  i,
-                  (i + 4 > categories.length) ? categories.length : i + 4,
-                );
+              for (int i = 0; i < items.length; i += 4) {
+                final end = (i + 4 > items.length) ? items.length : i + 4;
+                final chunk = items.sublist(i, end);
                 categoryRows.add(
                   Row(
                     children: List.generate(4, (index) {
                       if (index < chunk.length) {
-                        return Expanded(
-                          child: _buildCategoryChip(chunk[index]),
-                        );
-                      } else {
-                        return const Expanded(
-                          child: SizedBox(),
-                        );
+                        return Expanded(child: chunk[index]);
                       }
+                      return const Expanded(child: SizedBox());
                     }),
                   ),
                 );
-                if (i + 4 < categories.length) {
+                if (end < items.length) {
                   categoryRows.add(const SizedBox(height: 14));
                 }
               }
@@ -336,6 +337,50 @@ class VoiceConfirmationStageView extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  /// Chip "+" untuk menambah kategori baru.
+  Widget _buildAddCategoryChip() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Material(
+          color: AppColors.surfaceSubtle,
+          shape: const CircleBorder(),
+          clipBehavior: Clip.hardEdge,
+          child: InkWell(
+            onTap: onAddCategory,
+            child: Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppColors.textHint.withOpacity(0.4),
+                  width: 1.5,
+                ),
+              ),
+              child: const Icon(
+                Icons.add_rounded,
+                color: AppColors.textSecondary,
+                size: 24,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Tambah',
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
     );
   }
 }

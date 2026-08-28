@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:ui';
 
 enum TopSnackBarType { success, error, info }
@@ -69,7 +70,8 @@ class _TopSnackBarWidgetState extends State<_TopSnackBarWidget>
   }
 
   Future<void> _showAndHide() async {
-    // Tampil
+    // Trigger haptic vibration & tampilkan snackbar
+    HapticFeedback.mediumImpact();
     await _controller.forward();
     
     // Tunggu durasi

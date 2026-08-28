@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class SettingsService {
   static const _keySaveReceipt = 'save_receipt_image';
   static const _keyCustomUsername = 'custom_username';
+  static const _keyIsBalanceVisible = 'is_balance_visible';
 
   final SharedPreferences _prefs;
 
@@ -28,4 +29,14 @@ class SettingsService {
   Future<void> setCustomUsername(String value) async {
     await _prefs.setString(_keyCustomUsername, value.trim());
   }
+
+  /// Mengembalikan status visibilitas saldo (default true).
+  bool get isBalanceVisible {
+    return _prefs.getBool(_keyIsBalanceVisible) ?? true;
+  }
+
+  Future<void> setIsBalanceVisible(bool value) async {
+    await _prefs.setBool(_keyIsBalanceVisible, value);
+  }
 }
+

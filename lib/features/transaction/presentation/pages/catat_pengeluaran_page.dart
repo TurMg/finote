@@ -7,7 +7,9 @@ import '../bloc/transaction_bloc.dart';
 import '../bloc/transaction_event.dart';
 import '../bloc/transaction_state.dart';
 import '../../../category/presentation/bloc/category_bloc.dart';
+import '../../../category/presentation/bloc/category_event.dart';
 import '../../../category/presentation/bloc/category_state.dart';
+import '../../../category/presentation/widgets/form_kategori_bottom_sheet.dart';
 import '../../../category/domain/entities/category.dart';
 import '../bloc/history/history_bloc.dart';
 import '../bloc/history/history_event.dart';
@@ -55,16 +57,15 @@ class _CatatPengeluaranViewState extends State<CatatPengeluaranView> {
   }
 
   Future<void> _pilihTanggal() async {
-    final themeColor = _transactionType == 'INCOME' ? AppColors.incomeGreen : AppColors.primary;
     final picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(primary: themeColor),
+            colorScheme: const ColorScheme.light(primary: AppColors.primary),
           ),
           child: child!,
         );
@@ -117,10 +118,11 @@ class _CatatPengeluaranViewState extends State<CatatPengeluaranView> {
         );
   }
 
+  Color get accentColor => AppColors.primary;
+
   @override
   Widget build(BuildContext context) {
     final isIncome = _transactionType == 'INCOME';
-    final accentColor = AppColors.primary;
 
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
@@ -128,7 +130,7 @@ class _CatatPengeluaranViewState extends State<CatatPengeluaranView> {
         backgroundColor: AppColors.scaffoldBackground,
         resizeToAvoidBottomInset: true,
         appBar: AppBar(
-          backgroundColor: accentColor,
+          backgroundColor: AppColors.primary,
           elevation: 0,
           scrolledUnderElevation: 0,
           leading: IconButton(
@@ -207,7 +209,7 @@ class _CatatPengeluaranViewState extends State<CatatPengeluaranView> {
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
-                                    color: accentColor.withOpacity(0.8),
+                                    color: AppColors.primary.withOpacity(0.8),
                                     letterSpacing: 1.2,
                                   ),
                                 ),
@@ -228,12 +230,12 @@ class _CatatPengeluaranViewState extends State<CatatPengeluaranView> {
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       crossAxisAlignment: CrossAxisAlignment.center,
                                       children: [
-                                        Text(
+                                        const Text(
                                           'Rp ',
                                           style: TextStyle(
                                             fontSize: 32,
                                             fontWeight: FontWeight.bold,
-                                            color: accentColor,
+                                            color: AppColors.primary,
                                           ),
                                         ),
                                         IntrinsicWidth(
@@ -346,37 +348,34 @@ class _CatatPengeluaranViewState extends State<CatatPengeluaranView> {
                                           }
 
                                           if (categories.isEmpty) {
-                                            return const Padding(
-                                              padding: EdgeInsets.symmetric(vertical: 12),
-                                              child: Text(
-                                                'Belum ada kategori untuk tipe ini.',
-                                                style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-                                              ),
+                                            return _buildAddCategoryChip(
+                                              catState.categories,
                                             );
                                           }
 
+                                          // Append the "+" add chip to the item list
+                                          final items = <Widget>[
+                                            ...categories.map(_buildCategoryChip),
+                                            _buildAddCategoryChip(
+                                              catState.categories,
+                                            ),
+                                          ];
+
                                           final categoryRows = <Widget>[];
-                                          for (int i = 0; i < categories.length; i += 4) {
-                                            final chunk = categories.sublist(
-                                              i,
-                                              (i + 4 > categories.length) ? categories.length : i + 4,
-                                            );
+                                          for (int i = 0; i < items.length; i += 4) {
+                                            final end = (i + 4 > items.length) ? items.length : i + 4;
+                                            final chunk = items.sublist(i, end);
                                             categoryRows.add(
                                               Row(
                                                 children: List.generate(4, (index) {
                                                   if (index < chunk.length) {
-                                                    return Expanded(
-                                                      child: _buildCategoryChip(chunk[index]),
-                                                    );
-                                                  } else {
-                                                    return const Expanded(
-                                                      child: SizedBox(),
-                                                    );
+                                                    return Expanded(child: chunk[index]);
                                                   }
+                                                  return const Expanded(child: SizedBox());
                                                 }),
                                               ),
                                             );
-                                            if (i + 4 < categories.length) {
+                                            if (end < items.length) {
                                               categoryRows.add(const SizedBox(height: 14));
                                             }
                                           }
@@ -612,5 +611,72 @@ class _CatatPengeluaranViewState extends State<CatatPengeluaranView> {
         ],
       ),
     );
+  }
+
+  /// Chip "+" untuk menambah kategori baru langsung dari halaman ini.
+  Widget _buildAddCategoryChip(List<Category> allCategories) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Material(
+          color: AppColors.surfaceSubtle,
+          shape: const CircleBorder(),
+          clipBehavior: Clip.hardEdge,
+          child: InkWell(
+            onTap: () => _showAddCategorySheet(allCategories),
+            child: Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppColors.textHint.withOpacity(0.4),
+                  width: 1.5,
+                ),
+              ),
+              child: const Icon(
+                Icons.add_rounded,
+                color: AppColors.textSecondary,
+                size: 24,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Tambah',
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Buka FormKategoriBottomSheet dan auto-select kategori baru.
+  void _showAddCategorySheet(List<Category> allCategories) async {
+    final result = await showModalBottomSheet<Category>(
+      context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => FormKategoriBottomSheet(
+        allCategories: allCategories,
+        defaultType: _transactionType,
+      ),
+    );
+
+    if (result != null && mounted) {
+      context.read<CategoryBloc>().add(AddCategory(result));
+      setState(() {
+        _selectedKategori = result.name;
+        _kategoriError = null;
+        _shakeKategori = false;
+      });
+    }
   }
 }

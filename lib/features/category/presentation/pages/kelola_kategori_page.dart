@@ -312,6 +312,7 @@ class _KelolaKategoriViewState extends State<KelolaKategoriView> {
   }) async {
     final result = await showModalBottomSheet<Category>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => FormKategoriBottomSheet(
@@ -332,6 +333,7 @@ class _KelolaKategoriViewState extends State<KelolaKategoriView> {
   ) async {
     final result = await showModalBottomSheet<Category>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => FormKategoriBottomSheet(

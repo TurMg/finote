@@ -100,6 +100,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
@@ -133,11 +134,6 @@ class _ProfilePageState extends State<ProfilePage> {
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                'Nama ini hanya digunakan di aplikasi Finote dan tidak mengubah nama akun Google asli Anda.',
-                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
               ),
               const SizedBox(height: 20),
               TextField(

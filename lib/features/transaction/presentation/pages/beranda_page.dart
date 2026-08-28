@@ -7,6 +7,9 @@ import '../../../../core/constants/colors.dart';
 import '../../../../core/services/google_sheets_service.dart';
 import '../../../../core/services/sync_service.dart';
 import '../../../../core/services/settings_service.dart';
+import '../../../../core/widgets/animated_counter_text.dart';
+import '../../../../core/widgets/bouncing_button.dart';
+import '../../../../core/widgets/staggered_item_wrapper.dart';
 import '../widgets/transaction_detail_bottom_sheet.dart';
 import '../widgets/transaction_card_tile.dart';
 import '../bloc/transaction_bloc.dart';
@@ -34,12 +37,13 @@ class BerandaView extends StatefulWidget {
 }
 
 class _BerandaViewState extends State<BerandaView> {
-  bool _isBalanceVisible = true;
+  late bool _isBalanceVisible;
   String? _userName;
 
   @override
   void initState() {
     super.initState();
+    _isBalanceVisible = GetIt.instance<SettingsService>().isBalanceVisible;
     _checkGoogleUser();
     _triggerStartupSync();
   }
@@ -301,23 +305,24 @@ class _BerandaViewState extends State<BerandaView> {
                   Row(
                     children: [
                       Expanded(
-                        child: Text(
-                          _isBalanceVisible ? _formatRupiah(saldo) : 'Rp •••••••',
+                        child: AnimatedCounterText(
+                          value: _isBalanceVisible ? saldo : 0,
+                          formatter: (val) => _isBalanceVisible ? _formatRupiah(val) : 'Rp •••••••',
                           style: TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.bold,
                             color: saldo >= 0 ? Colors.white : const Color(0xFFFCA5A5),
                             letterSpacing: -0.5,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       IconButton(
                         onPressed: () {
+                          final newValue = !_isBalanceVisible;
                           setState(() {
-                            _isBalanceVisible = !_isBalanceVisible;
+                            _isBalanceVisible = newValue;
                           });
+                          GetIt.instance<SettingsService>().setIsBalanceVisible(newValue);
                         },
                         icon: Icon(
                           _isBalanceVisible ? Icons.visibility_rounded : Icons.visibility_off_rounded,
@@ -366,15 +371,14 @@ class _BerandaViewState extends State<BerandaView> {
                                     ),
                                   ),
                                   const SizedBox(height: 2),
-                                  Text(
-                                    _isBalanceVisible ? _formatRupiah(pemasukan) : 'Rp •••••••',
+                                  AnimatedCounterText(
+                                    value: _isBalanceVisible ? pemasukan : 0,
+                                    formatter: (val) => _isBalanceVisible ? _formatRupiah(val) : 'Rp •••••••',
                                     style: const TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.bold,
                                       color: Colors.white,
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ],
                               ),
@@ -418,15 +422,14 @@ class _BerandaViewState extends State<BerandaView> {
                                     ),
                                   ),
                                   const SizedBox(height: 2),
-                                  Text(
-                                    _isBalanceVisible ? _formatRupiah(pengeluaran) : 'Rp •••••••',
+                                  AnimatedCounterText(
+                                    value: _isBalanceVisible ? pengeluaran : 0,
+                                    formatter: (val) => _isBalanceVisible ? _formatRupiah(val) : 'Rp •••••••',
                                     style: const TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.bold,
                                       color: Colors.white,
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ],
                               ),
@@ -499,19 +502,26 @@ class _BerandaViewState extends State<BerandaView> {
           BlocBuilder<CategoryBloc, CategoryState>(
             builder: (context, catState) {
               return Column(
-                children: transactions.map((t) {
-                  return TransactionCardTile(
-                    transaction: t,
-                    categoryState: catState,
-                    onTap: () {
-                      showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        useRootNavigator: true,
-                        backgroundColor: Colors.transparent,
-                        builder: (_) => TransactionDetailBottomSheet(transaction: t),
-                      );
-                    },
+                children: transactions.asMap().entries.map((entry) {
+                  final idx = entry.key;
+                  final t = entry.value;
+                  return StaggeredItemWrapper(
+                    index: idx,
+                    child: BouncingButton(
+                      onTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          useRootNavigator: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => TransactionDetailBottomSheet(transaction: t),
+                        );
+                      },
+                      child: TransactionCardTile(
+                        transaction: t,
+                        categoryState: catState,
+                      ),
+                    ),
                   );
                 }).toList(),
               );

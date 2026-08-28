@@ -10,6 +10,7 @@ import '../../../../core/utils/category_keyword_helper.dart';
 import '../../../../core/utils/color_history_manager.dart';
 import '../../../../core/utils/icon_resolver.dart';
 import '../../../../core/widgets/category_icon_widget.dart';
+import '../../../../core/widgets/sliding_segmented_control.dart';
 import '../../../../core/widgets/shake_widget.dart';
 import '../../domain/entities/category.dart';
 
@@ -56,9 +57,36 @@ class _FormKategoriBottomSheetState extends State<FormKategoriBottomSheet> {
 
   // Presets Emoji Populer
   static const List<String> _emojiPresets = [
-    '🍕', '🍔', '☕', '🎮', '🚗', '✈️', '🎁', '💰', '💼', '🎓',
-    '💊', '⚽', '🐱', '📱', '🛒', '🍿', '📚', '🏠', '💵', '🎟️',
-    '🩺', '💄', '⚡', '🏋️', '🎨', '✈️', '🐾', '🏖️', '🍺', '🛍️'
+    '🍕',
+    '🍔',
+    '☕',
+    '🎮',
+    '🚗',
+    '✈️',
+    '🎁',
+    '💰',
+    '💼',
+    '🎓',
+    '💊',
+    '⚽',
+    '🐱',
+    '📱',
+    '🛒',
+    '🍿',
+    '📚',
+    '🏠',
+    '💵',
+    '🎟️',
+    '🩺',
+    '💄',
+    '⚡',
+    '🏋️',
+    '🎨',
+    '✈️',
+    '🐾',
+    '🏖️',
+    '🍺',
+    '🛍️'
   ];
 
   bool get isEditing => widget.existingCategory != null;
@@ -163,456 +191,426 @@ class _FormKategoriBottomSheetState extends State<FormKategoriBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          20,
-          16,
-          20,
-          MediaQuery.of(context).viewInsets.bottom + 20,
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Handle bar
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.cardBorder,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        return Transform.translate(
+          offset: Offset(0, 20 * (1 - value)),
+          child: Opacity(
+            opacity: value,
+            child: child,
+          ),
+        );
+      },
+      child: DraggableScrollableSheet(
+        initialChildSize: 0.9,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (context, scrollController) {
+          return Container(
+            decoration: const BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: ListView(
+              controller: scrollController,
+              padding: EdgeInsets.fromLTRB(
+                20,
+                16,
+                20,
+                MediaQuery.of(context).viewInsets.bottom + 20,
               ),
-              const SizedBox(height: 20),
-
-              // Title
-              Text(
-                isEditing ? 'Edit Kategori' : 'Tambah Kategori',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Peruntukan Tipe Kategori
-              const Text(
-                'Tipe Kategori',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  _buildTypeOption(
-                    label: 'Pengeluaran',
-                    typeKey: 'EXPENSE',
-                    activeColor: AppColors.expenseRed,
-                  ),
-                  const SizedBox(width: 8),
-                  _buildTypeOption(
-                    label: 'Pemasukan',
-                    typeKey: 'INCOME',
-                    activeColor: AppColors.incomeGreen,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // Nama Kategori
-              const Text(
-                'Nama Kategori',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              ShakeWidget(
-                shake: _shakeName,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    TextField(
-                      controller: _nameController,
-                      textCapitalization: TextCapitalization.words,
-                      onChanged: (val) {
-                        if (_nameError != null) {
-                          setState(() {
-                            _nameError = null;
-                            _shakeName = false;
-                          });
-                        }
-                      },
-                      style: const TextStyle(
-                        fontSize: 15,
-                        color: AppColors.textPrimary,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: _selectedType == 'INCOME'
-                            ? 'Contoh: Gaji, Bonus, Dividen'
-                            : 'Contoh: Belanja, Makanan, Transport',
-                        hintStyle: const TextStyle(
-                          color: AppColors.textHint,
-                          fontSize: 14,
-                        ),
-                        filled: true,
-                        fillColor: AppColors.surfaceSubtle,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                              color: AppColors.cardBorder.withOpacity(0.5)),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                              color: AppColors.cardBorder.withOpacity(0.5)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                              color: AppColors.primary, width: 1.5),
-                        ),
-                      ),
+              children: [
+                // Handle bar
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.cardBorder,
+                      borderRadius: BorderRadius.circular(2),
                     ),
-                    if (_nameError != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8, left: 4),
-                        child: Text(
-                          _nameError!,
-                          style: const TextStyle(
-                            color: AppColors.error,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Title
+                Text(
+                  isEditing ? 'Edit Kategori' : 'Tambah Kategori',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Peruntukan Tipe Kategori
+                const Text(
+                  'Tipe Kategori',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SlidingSegmentedControl<String>(
+                  selectedValue: _selectedType,
+                  items: const ['EXPENSE', 'INCOME'],
+                  height: 44,
+                  borderRadius: 14,
+                  activeColor: _selectedType == 'INCOME' ? AppColors.incomeGreen : AppColors.expenseRed,
+                  labelBuilder: (type) => type == 'EXPENSE' ? 'Pengeluaran' : 'Pemasukan',
+                  onChanged: (type) => setState(() => _selectedType = type),
+                ),
+                const SizedBox(height: 20),
+
+                // Nama Kategori
+                const Text(
+                  'Nama Kategori',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ShakeWidget(
+                  shake: _shakeName,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextField(
+                        controller: _nameController,
+                        textCapitalization: TextCapitalization.words,
+                        onChanged: (val) {
+                          if (_nameError != null) {
+                            setState(() {
+                              _nameError = null;
+                              _shakeName = false;
+                            });
+                          }
+                        },
+                        style: const TextStyle(
+                          fontSize: 15,
+                          color: AppColors.textPrimary,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: _selectedType == 'INCOME'
+                              ? 'Contoh: Gaji, Bonus, Dividen'
+                              : 'Contoh: Belanja, Makanan, Transport',
+                          hintStyle: const TextStyle(
+                            color: AppColors.textHint,
+                            fontSize: 14,
+                          ),
+                          filled: true,
+                          fillColor: AppColors.surfaceSubtle,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                                color: AppColors.cardBorder.withOpacity(0.5)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                                color: AppColors.cardBorder.withOpacity(0.5)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                                color: AppColors.primary, width: 1.5),
                           ),
                         ),
                       ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Preview Icon & Warna
-              Center(
-                child: ValueListenableBuilder<String>(
-                  valueListenable: _selectedIconNotifier,
-                  builder: (context, currentIcon, _) {
-                    final activeColor = _selectedColor ?? AppColors.primary;
-                    final activeBgColor =
-                        Color.lerp(Colors.white, activeColor, 0.15)!;
-
-                    return AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        color: activeBgColor,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: activeColor,
-                          width: 2.5,
+                      if (_nameError != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8, left: 4),
+                          child: Text(
+                            _nameError!,
+                            style: const TextStyle(
+                              color: AppColors.error,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ),
-                      ),
-                      child: CategoryIconWidget(
-                        iconName: currentIcon,
-                        color: activeColor,
-                        size: 28,
-                        imageBorderRadius: 32,
-                        useFullBox: true,
-                      ),
-                    );
-                  },
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-              // SECTION: Pilih Tipe Icon (Vector / Emoji / Gambar)
-              const Text(
-                'Pilih Tipe Icon',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
+                // Preview Icon & Warna
+                Center(
+                  child: ValueListenableBuilder<String>(
+                    valueListenable: _selectedIconNotifier,
+                    builder: (context, currentIcon, _) {
+                      final activeColor = _selectedColor ?? AppColors.primary;
+                      final activeBgColor =
+                          Color.lerp(Colors.white, activeColor, 0.15)!;
 
-              // 3-Segmented Switcher Tab
-              Container(
-                height: 42,
-                padding: const EdgeInsets.all(3),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceSubtle,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    _buildIconTabButton(title: 'Standard', modeIndex: 0),
-                    _buildIconTabButton(title: 'Emoji 😃', modeIndex: 1),
-                    _buildIconTabButton(title: 'Gambar 🖼️', modeIndex: 2),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // Konten Tab Icon
-              if (_iconTabMode == 0) _buildVectorIconPicker(),
-              if (_iconTabMode == 1) _buildEmojiPicker(),
-              if (_iconTabMode == 2) _buildImagePickerView(),
-
-              const SizedBox(height: 20),
-
-              // SECTION: Pilih Warna
-              const Text(
-                'Pilih Warna',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 10),
-              if (_isLoadingHistory)
-                const Center(child: CircularProgressIndicator())
-              else
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    // Color Picker Button
-                    GestureDetector(
-                      onTap: _showColorPicker,
-                      child: Container(
-                        width: 36,
-                        height: 36,
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: 64,
+                        height: 64,
                         decoration: BoxDecoration(
+                          color: activeBgColor,
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: AppColors.textSecondary.withOpacity(0.3),
-                            width: 1.5,
+                            color: activeColor,
+                            width: 2.5,
                           ),
                         ),
-                        child: const Icon(
-                          Icons.add,
-                          color: AppColors.textSecondary,
-                          size: 20,
+                        child: CategoryIconWidget(
+                          iconName: currentIcon,
+                          color: activeColor,
+                          size: 28,
+                          imageBorderRadius: 32,
+                          useFullBox: true,
                         ),
-                      ),
-                    ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 20),
 
-                    // History Colors
-                    ..._colorHistory.map((colorInt) {
-                      final isSelected = _selectedColor != null &&
-                          _selectedColor!.value == colorInt;
-                      return GestureDetector(
-                        onTap: () =>
-                            setState(() => _selectedColor = Color(colorInt)),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
+                // SECTION: Pilih Tipe Icon (Vector / Emoji / Gambar)
+                const Text(
+                  'Pilih Tipe Icon',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // 3-Segmented Switcher Tab
+                SlidingSegmentedControl<int>(
+                  selectedValue: _iconTabMode,
+                  items: const [0, 1, 2],
+                  height: 42,
+                  borderRadius: 12,
+                  labelBuilder: (mode) {
+                    switch (mode) {
+                      case 0:
+                        return 'Standard';
+                      case 1:
+                        return 'Emoji 😃';
+                      case 2:
+                        return 'Gambar 🖼️';
+                      default:
+                        return '';
+                    }
+                  },
+                  onChanged: (mode) => setState(() => _iconTabMode = mode),
+                ),
+                const SizedBox(height: 12),
+
+                // Konten Tab Icon
+                if (_iconTabMode == 0) _buildVectorIconPicker(),
+                if (_iconTabMode == 1) _buildEmojiPicker(),
+                if (_iconTabMode == 2) _buildImagePickerView(),
+
+                const SizedBox(height: 20),
+
+                // SECTION: Pilih Warna
+                const Text(
+                  'Pilih Warna',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                if (_isLoadingHistory)
+                  const Center(child: CircularProgressIndicator())
+                else
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      // Color Picker Button
+                      GestureDetector(
+                        onTap: _showColorPicker,
+                        child: Container(
                           width: 36,
                           height: 36,
                           decoration: BoxDecoration(
-                            color: Color(colorInt),
                             shape: BoxShape.circle,
-                            border: isSelected
-                                ? Border.all(
-                                    color: AppColors.textPrimary,
-                                    width: 3,
-                                  )
-                                : Border.all(
-                                    color: Colors.transparent,
-                                    width: 3,
-                                  ),
+                            border: Border.all(
+                              color: AppColors.textSecondary.withOpacity(0.3),
+                              width: 1.5,
+                            ),
                           ),
-                          child: isSelected
-                              ? const Icon(Icons.check,
-                                  color: Colors.white, size: 18)
-                              : null,
+                          child: const Icon(
+                            Icons.add,
+                            color: AppColors.textSecondary,
+                            size: 20,
+                          ),
                         ),
-                      );
-                    }),
-                  ],
-                ),
-              const SizedBox(height: 20),
+                      ),
 
-              // Keywords untuk Voice Input
-              const Text(
-                'Kata Kunci Voice (opsional)',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                      // History Colors
+                      ..._colorHistory.map((colorInt) {
+                        final isSelected = _selectedColor != null &&
+                            _selectedColor!.value == colorInt;
+                        return GestureDetector(
+                          onTap: () =>
+                              setState(() => _selectedColor = Color(colorInt)),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: Color(colorInt),
+                              shape: BoxShape.circle,
+                              border: isSelected
+                                  ? Border.all(
+                                      color: AppColors.textPrimary,
+                                      width: 3,
+                                    )
+                                  : Border.all(
+                                      color: Colors.transparent,
+                                      width: 3,
+                                    ),
+                            ),
+                            child: isSelected
+                                ? const Icon(Icons.check,
+                                    color: Colors.white, size: 18)
+                                : null,
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                const SizedBox(height: 20),
+
+                // Keywords untuk Voice Input
+                const Text(
+                  'Kata Kunci Voice (opsional)',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Pisahkan dengan koma. Contoh: gaji, bonus, dividen',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
+                const SizedBox(height: 4),
+                const Text(
+                  'Pisahkan dengan koma. Contoh: gaji, bonus, dividen',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              ShakeWidget(
-                shake: _shakeKeywords,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    TextField(
-                      controller: _keywordsController,
-                      onChanged: (val) {
-                        _isKeywordsManuallyEdited = true;
-                        if (_keywordsError != null) {
-                          setState(() {
-                            _keywordsError = null;
-                            _shakeKeywords = false;
-                          });
-                        }
-                      },
+                const SizedBox(height: 8),
+                ShakeWidget(
+                  shake: _shakeKeywords,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextField(
+                        controller: _keywordsController,
+                        onChanged: (val) {
+                          _isKeywordsManuallyEdited = true;
+                          if (_keywordsError != null) {
+                            setState(() {
+                              _keywordsError = null;
+                              _shakeKeywords = false;
+                            });
+                          }
+                        },
+                        style: const TextStyle(
+                          fontSize: 15,
+                          color: AppColors.textPrimary,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'kata1, kata2, kata3',
+                          hintStyle: const TextStyle(
+                            color: AppColors.textHint,
+                            fontSize: 14,
+                          ),
+                          filled: true,
+                          fillColor: AppColors.surfaceSubtle,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                                color: AppColors.cardBorder.withOpacity(0.5)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                                color: AppColors.cardBorder.withOpacity(0.5)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                                color: AppColors.primary, width: 1.5),
+                          ),
+                        ),
+                      ),
+                      if (_keywordsError != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8, left: 4),
+                          child: Text(
+                            _keywordsError!,
+                            style: const TextStyle(
+                              color: AppColors.error,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 28),
+
+                // Tombol Simpan
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    onPressed: _onSave,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      isEditing ? 'Simpan Perubahan' : 'Tambah Kategori',
                       style: const TextStyle(
-                        fontSize: 15,
-                        color: AppColors.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
-                      decoration: InputDecoration(
-                        hintText: 'kata1, kata2, kata3',
-                        hintStyle: const TextStyle(
-                          color: AppColors.textHint,
-                          fontSize: 14,
-                        ),
-                        filled: true,
-                        fillColor: AppColors.surfaceSubtle,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                              color: AppColors.cardBorder.withOpacity(0.5)),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                              color: AppColors.cardBorder.withOpacity(0.5)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                              color: AppColors.primary, width: 1.5),
-                        ),
-                      ),
-                    ),
-                    if (_keywordsError != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8, left: 4),
-                        child: Text(
-                          _keywordsError!,
-                          style: const TextStyle(
-                            color: AppColors.error,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 28),
-
-              // Tombol Simpan
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: _onSave,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    isEditing ? 'Simpan Perubahan' : 'Tambah Kategori',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
   // --- Sub-Widgets untuk Icon Picker ---
 
-  Widget _buildIconTabButton({required String title, required int modeIndex}) {
-    final isSelected = _iconTabMode == modeIndex;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _iconTabMode = modeIndex;
-            if (modeIndex == 0 &&
-                (_selectedIconNotifier.value.startsWith('emoji:') ||
-                    _selectedIconNotifier.value.startsWith('image:'))) {
-              _selectedIconNotifier.value = 'shopping_bag_rounded';
-            } else if (modeIndex == 1 && _emojiController.text.isNotEmpty) {
-              _selectedIconNotifier.value = 'emoji:${_emojiController.text}';
-            } else if (modeIndex == 2 && _customImagePath != null) {
-              _selectedIconNotifier.value = 'image:$_customImagePath';
-            }
-          });
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          decoration: BoxDecoration(
-            color: isSelected ? Colors.white : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 4,
-                      offset: const Offset(0, 1),
-                    )
-                  ]
-                : [],
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            title,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-              color: isSelected ? AppColors.primary : AppColors.textSecondary,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildVectorIconPicker() {
     return ValueListenableBuilder<String>(
@@ -650,8 +648,9 @@ class _FormKategoriBottomSheetState extends State<FormKategoriBottomSheet> {
                   child: Icon(
                     IconResolver.resolve(iconName),
                     size: 22,
-                    color:
-                        isSelected ? AppColors.primary : AppColors.textSecondary,
+                    color: isSelected
+                        ? AppColors.primary
+                        : AppColors.textSecondary,
                   ),
                 ),
               );
@@ -832,40 +831,7 @@ class _FormKategoriBottomSheetState extends State<FormKategoriBottomSheet> {
     );
   }
 
-  Widget _buildTypeOption({
-    required String label,
-    required String typeKey,
-    required Color activeColor,
-  }) {
-    final isSelected = _selectedType == typeKey;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _selectedType = typeKey),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: isSelected ? activeColor : AppColors.surfaceSubtle,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected
-                  ? activeColor
-                  : AppColors.cardBorder.withOpacity(0.5),
-            ),
-          ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-              color: isSelected ? Colors.white : AppColors.textSecondary,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+
 
   void _showColorPicker() {
     Color tempColor = _selectedColor ?? AppColors.primary;

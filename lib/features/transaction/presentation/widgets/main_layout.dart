@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/constants/colors.dart';
+import '../../../../core/widgets/bouncing_button.dart';
 import 'expandable_fab.dart';
-import '../../../../core/constants/colors.dart'; // Sesuaikan path AppColors lu
 import 'voice_input_bottom_sheet.dart';
 
 class MainLayout extends StatelessWidget {
@@ -55,24 +56,18 @@ class MainLayout extends StatelessWidget {
                     child: Row(
                       children: [
                         Expanded(
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: () => context.go('/'),
-                              child: Center(
-                                child: Icon(Icons.home_rounded, color: location == '/' ? Colors.white : Colors.white54, size: 25),
-                              ),
+                          child: BouncingButton(
+                            onTap: () => context.go('/'),
+                            child: Center(
+                              child: Icon(Icons.home_rounded, color: location == '/' ? Colors.white : Colors.white54, size: 25),
                             ),
                           ),
                         ),
                         Expanded(
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: () => context.go('/statistik'),
-                              child: Center(
-                                child: Icon(Icons.pie_chart_rounded, color: location == '/statistik' ? Colors.white : Colors.white54, size: 25),
-                              ),
+                          child: BouncingButton(
+                            onTap: () => context.go('/statistik'),
+                            child: Center(
+                              child: Icon(Icons.pie_chart_rounded, color: location == '/statistik' ? Colors.white : Colors.white54, size: 25),
                             ),
                           ),
                         ),
@@ -88,24 +83,18 @@ class MainLayout extends StatelessWidget {
                     child: Row(
                       children: [
                         Expanded(
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: () => context.go('/riwayat'),
-                              child: Center(
-                                child: Icon(Icons.history_rounded, color: location == '/riwayat' ? Colors.white : Colors.white54, size: 25),
-                              ),
+                          child: BouncingButton(
+                            onTap: () => context.go('/riwayat'),
+                            child: Center(
+                              child: Icon(Icons.history_rounded, color: location == '/riwayat' ? Colors.white : Colors.white54, size: 25),
                             ),
                           ),
                         ),
                         Expanded(
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: () => context.go('/profil'),
-                              child: Center(
-                                child: Icon(Icons.person_rounded, color: (location == '/profil' || location == '/settings') ? Colors.white : Colors.white54, size: 25),
-                              ),
+                          child: BouncingButton(
+                            onTap: () => context.go('/profil'),
+                            child: Center(
+                              child: Icon(Icons.person_rounded, color: (location == '/profil' || location == '/settings') ? Colors.white : Colors.white54, size: 25),
                             ),
                           ),
                         ),

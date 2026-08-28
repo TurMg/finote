@@ -9,7 +9,9 @@ import '../bloc/transaction_bloc.dart';
 import '../bloc/transaction_event.dart';
 import '../bloc/transaction_state.dart';
 import '../../../category/presentation/bloc/category_bloc.dart';
+import '../../../category/presentation/bloc/category_event.dart';
 import '../../../category/presentation/bloc/category_state.dart';
+import '../../../category/presentation/widgets/form_kategori_bottom_sheet.dart';
 import '../../../category/domain/entities/category.dart';
 import '../../../../core/widgets/top_snackbar.dart';
 import '../../../../core/widgets/category_icon_widget.dart';
@@ -68,6 +70,7 @@ class _UpdateTransactionBottomSheetState
     final picker = ImagePicker();
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       backgroundColor: AppColors.scaffoldBackground,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -128,20 +131,15 @@ class _UpdateTransactionBottomSheetState
   }
 
   Future<void> _selectDate(BuildContext context) async {
-    final themeColor = _transactionType == 'INCOME' ? AppColors.incomeGreen : AppColors.primary;
     final picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
       firstDate: DateTime(2000),
-      lastDate: DateTime(2101),
+      lastDate: DateTime(2100),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: themeColor,
-              onPrimary: Colors.white,
-              onSurface: AppColors.textPrimary,
-            ),
+            colorScheme: const ColorScheme.light(primary: AppColors.primary),
           ),
           child: child!,
         );
@@ -204,10 +202,11 @@ class _UpdateTransactionBottomSheetState
     );
   }
 
+  Color get accentColor => AppColors.primary;
+
   @override
   Widget build(BuildContext context) {
     final isIncome = _transactionType == 'INCOME';
-    final accentColor = AppColors.primary;
 
     return BlocListener<TransactionBloc, TransactionState>(
       listener: (context, state) {
@@ -222,24 +221,28 @@ class _UpdateTransactionBottomSheetState
               message: state.message, type: TopSnackBarType.error);
         }
       },
-      child: GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(),
-        child: Container(
-          decoration: const BoxDecoration(
-            color: AppColors.scaffoldBackground,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          child: SingleChildScrollView(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-              top: 12,
-              left: 24,
-              right: 24,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
+      child: DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (context, scrollController) {
+          return GestureDetector(
+            onTap: () => FocusScope.of(context).unfocus(),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: AppColors.scaffoldBackground,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              child: ListView(
+                controller: scrollController,
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+                  top: 12,
+                  left: 24,
+                  right: 24,
+                ),
+                children: [
                 Center(
                   child: Container(
                     width: 40,
@@ -392,28 +395,27 @@ class _UpdateTransactionBottomSheetState
                           ? filteredCategories
                           : catState.categories;
 
+                      // Append the "+" add chip to the item list
+                      final items = <Widget>[
+                        ...categories.map(_buildCategoryChip),
+                        _buildAddCategoryChip(catState.categories),
+                      ];
+
                       final categoryRows = <Widget>[];
-                      for (int i = 0; i < categories.length; i += 4) {
-                        final chunk = categories.sublist(
-                          i,
-                          (i + 4 > categories.length) ? categories.length : i + 4,
-                        );
+                      for (int i = 0; i < items.length; i += 4) {
+                        final end = (i + 4 > items.length) ? items.length : i + 4;
+                        final chunk = items.sublist(i, end);
                         categoryRows.add(
                           Row(
                             children: List.generate(4, (index) {
                               if (index < chunk.length) {
-                                return Expanded(
-                                  child: _buildCategoryChip(chunk[index]),
-                                );
-                              } else {
-                                return const Expanded(
-                                  child: SizedBox(),
-                                );
+                                return Expanded(child: chunk[index]);
                               }
+                              return const Expanded(child: SizedBox());
                             }),
                           ),
                         );
-                        if (i + 4 < categories.length) {
+                        if (end < items.length) {
                           categoryRows.add(const SizedBox(height: 14));
                         }
                       }
@@ -638,8 +640,9 @@ class _UpdateTransactionBottomSheetState
               ],
             ),
           ),
-        ),
-      ),
+        );
+      },
+    ),
     );
   }
 
@@ -687,5 +690,70 @@ class _UpdateTransactionBottomSheetState
         ],
       ),
     );
+  }
+
+  /// Chip "+" untuk menambah kategori baru langsung dari halaman ini.
+  Widget _buildAddCategoryChip(List<Category> allCategories) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Material(
+          color: AppColors.surfaceSubtle,
+          shape: const CircleBorder(),
+          clipBehavior: Clip.hardEdge,
+          child: InkWell(
+            onTap: () => _showAddCategorySheet(allCategories),
+            child: Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppColors.textHint.withOpacity(0.4),
+                  width: 1.5,
+                ),
+              ),
+              child: const Icon(
+                Icons.add_rounded,
+                color: AppColors.textSecondary,
+                size: 24,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Tambah',
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Buka FormKategoriBottomSheet dan auto-select kategori baru.
+  void _showAddCategorySheet(List<Category> allCategories) async {
+    final result = await showModalBottomSheet<Category>(
+      context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => FormKategoriBottomSheet(
+        allCategories: allCategories,
+        defaultType: _transactionType,
+      ),
+    );
+
+    if (result != null && mounted) {
+      context.read<CategoryBloc>().add(AddCategory(result));
+      setState(() {
+        _selectedKategori = result.name;
+      });
+    }
   }
 }

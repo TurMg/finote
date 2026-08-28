@@ -6,7 +6,9 @@ import '../../../../core/constants/colors.dart';
 import '../../../../core/widgets/top_snackbar.dart';
 import '../../../category/domain/entities/category.dart';
 import '../../../category/presentation/bloc/category_bloc.dart';
+import '../../../category/presentation/bloc/category_event.dart';
 import '../../../category/presentation/bloc/category_state.dart';
+import '../../../category/presentation/widgets/form_kategori_bottom_sheet.dart';
 import '../../domain/entities/voice_parsed_data.dart';
 import '../../domain/usecases/parse_voice_input.dart';
 import '../bloc/transaction_bloc.dart';
@@ -338,6 +340,7 @@ class _VoiceInputBottomSheetState extends State<VoiceInputBottomSheet> {
                         _selectedCategory = cat;
                       });
                     },
+                    onAddCategory: _showAddCategorySheet,
                     noteController: _noteController,
                     onSaveTransaction: _onSaveTransaction,
                     onRetryVoice: _listen,
@@ -348,5 +351,28 @@ class _VoiceInputBottomSheetState extends State<VoiceInputBottomSheet> {
         );
       },
     );
+  }
+
+  /// Buka FormKategoriBottomSheet dan auto-select kategori baru.
+  void _showAddCategorySheet() async {
+    final catState = context.read<CategoryBloc>().state;
+    final allCategories = catState is CategoryLoaded ? catState.categories : <Category>[];
+
+    final result = await showModalBottomSheet<Category>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => FormKategoriBottomSheet(
+        allCategories: allCategories,
+        defaultType: _selectedType,
+      ),
+    );
+
+    if (result != null && mounted) {
+      context.read<CategoryBloc>().add(AddCategory(result));
+      setState(() {
+        _selectedCategory = result.name;
+      });
+    }
   }
 }

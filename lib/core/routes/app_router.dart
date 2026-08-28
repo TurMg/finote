@@ -19,6 +19,25 @@ import '../../features/transaction/presentation/pages/splash_page.dart';
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<NavigatorState> _shellNavigatorKey = GlobalKey<NavigatorState>();
 
+Widget _buildTabTransition(
+  BuildContext context,
+  Animation<double> animation,
+  Animation<double> secondaryAnimation,
+  Widget child,
+) {
+  final curvedAnimation = CurvedAnimation(
+    parent: animation,
+    curve: Curves.easeOutCubic,
+  );
+  return FadeTransition(
+    opacity: curvedAnimation,
+    child: ScaleTransition(
+      scale: Tween<double>(begin: 0.96, end: 1.0).animate(curvedAnimation),
+      child: child,
+    ),
+  );
+}
+
 final GoRouter appRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
   initialLocation: '/splash', 
@@ -33,23 +52,48 @@ final GoRouter appRouter = GoRouter(
       routes: [
         GoRoute(
           path: '/',
-          builder: (context, state) => const BerandaPage(),
+          pageBuilder: (context, state) => CustomTransitionPage(
+            key: state.pageKey,
+            child: const BerandaPage(),
+            transitionsBuilder: _buildTabTransition,
+            transitionDuration: const Duration(milliseconds: 280),
+          ),
         ),
         GoRoute(
           path: '/riwayat',
-          builder: (context, state) => const RiwayatPage(),
+          pageBuilder: (context, state) => CustomTransitionPage(
+            key: state.pageKey,
+            child: const RiwayatPage(),
+            transitionsBuilder: _buildTabTransition,
+            transitionDuration: const Duration(milliseconds: 280),
+          ),
         ),
         GoRoute(
           path: '/statistik',
-          builder: (context, state) => const StatistikPage(),
+          pageBuilder: (context, state) => CustomTransitionPage(
+            key: state.pageKey,
+            child: const StatistikPage(),
+            transitionsBuilder: _buildTabTransition,
+            transitionDuration: const Duration(milliseconds: 280),
+          ),
         ),
         GoRoute(
           path: '/profil',
-          builder: (context, state) => const ProfilePage(),
+          pageBuilder: (context, state) => CustomTransitionPage(
+            key: state.pageKey,
+            child: const ProfilePage(),
+            transitionsBuilder: _buildTabTransition,
+            transitionDuration: const Duration(milliseconds: 280),
+          ),
         ),
         GoRoute(
           path: '/settings',
-          builder: (context, state) => const ProfilePage(),
+          pageBuilder: (context, state) => CustomTransitionPage(
+            key: state.pageKey,
+            child: const ProfilePage(),
+            transitionsBuilder: _buildTabTransition,
+            transitionDuration: const Duration(milliseconds: 280),
+          ),
         ),
       ],
     ),

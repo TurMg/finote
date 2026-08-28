@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/colors.dart';
+import '../../../../core/widgets/sliding_segmented_control.dart';
 
 class TransactionTypeSelector extends StatelessWidget {
   final String selectedType; // 'EXPENSE' or 'INCOME'
@@ -15,104 +16,36 @@ class TransactionTypeSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     final isExpense = selectedType == 'EXPENSE';
 
-    return Container(
+    return SlidingSegmentedControl<String>(
+      selectedValue: selectedType,
+      items: const ['EXPENSE', 'INCOME'],
       height: 50,
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceSubtle,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.cardBorder.withOpacity(0.5)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Segment 1: Pengeluaran
-          Expanded(
-            child: GestureDetector(
-              onTap: () => onChanged('EXPENSE'),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeInOut,
-                decoration: BoxDecoration(
-                  color: isExpense ? AppColors.primary : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: isExpense
-                      ? [
-                          BoxShadow(
-                            color: AppColors.primary.withOpacity(0.2),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          )
-                        ]
-                      : [],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.arrow_downward_rounded,
-                      size: 18,
-                      color: isExpense ? Colors.white : AppColors.textSecondary,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Pengeluaran',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: isExpense ? Colors.white : AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
+      borderRadius: 16,
+      activeColor: isExpense ? AppColors.expenseRed : AppColors.incomeGreen,
+      labelBuilder: (type) => type == 'EXPENSE' ? 'Pengeluaran' : 'Pemasukan',
+      customItemBuilder: (type, isActive) {
+        final isExp = type == 'EXPENSE';
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isExp ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
+              size: 18,
+              color: isActive ? Colors.white : AppColors.textSecondary,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              isExp ? 'Pengeluaran' : 'Pemasukan',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: isActive ? FontWeight.bold : FontWeight.w600,
+                color: isActive ? Colors.white : AppColors.textSecondary,
               ),
             ),
-          ),
-          const SizedBox(width: 4),
-          // Segment 2: Pemasukan
-          Expanded(
-            child: GestureDetector(
-              onTap: () => onChanged('INCOME'),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeInOut,
-                decoration: BoxDecoration(
-                  color: selectedType == 'INCOME' ? AppColors.primary : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: selectedType == 'INCOME'
-                      ? [
-                          BoxShadow(
-                            color: AppColors.primary.withOpacity(0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          )
-                        ]
-                      : [],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.arrow_upward_rounded,
-                      size: 18,
-                      color: selectedType == 'INCOME' ? Colors.white : AppColors.textSecondary,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Pemasukan',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: selectedType == 'INCOME' ? Colors.white : AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+          ],
+        );
+      },
+      onChanged: onChanged,
     );
   }
 }
