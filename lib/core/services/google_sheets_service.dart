@@ -64,50 +64,79 @@ class GoogleSheetsService {
     return GoogleAuthClient(headers);
   }
 
-  /// Memastikan Spreadsheet Finote ada. Jika belum, buat baru lengkap dengan Dashboard Emerald Dark Mode.
+  static const _spreadsheetName = 'Finote_Sync_Data';
+  static const _templateId = '1IMNImfbQvVlxqugBmwYfyAzH_Az-_CnoiRlTD2o6eXQ';
+
+  /// Memastikan Spreadsheet Finote ada.
+  /// Urutan pengecekan:
+  /// 1. Cek cache lokal (SharedPreferences) & validasi ke Drive.
+  /// 2. Jika tidak ada di cache lokal (misal: device baru), cari file dengan nama 'Finote_Sync_Data' di Google Drive.
+  /// 3. Jika belum pernah ada di Drive sama sekali, barulah klon dari template.
   Future<String?> ensureSpreadsheetExists() async {
     final client = await _getAuthenticatedClient();
     if (client == null) return null;
 
     final prefs = await SharedPreferences.getInstance();
     String? spreadsheetId = prefs.getString(_spreadsheetIdKey);
-
     final driveApi = drive.DriveApi(client);
 
-    // Cek apakah file benar-benar ada di Drive
+    // 1. Cek apakah ID dari cache lokal valid & belum dihapus
     if (spreadsheetId != null) {
       try {
-        final file = await driveApi.files.get(spreadsheetId, $fields: 'trashed') as drive.File;
-        if (file.trashed == true) {
-          spreadsheetId = null;
-        } else {
+        final file = await driveApi.files.get(spreadsheetId, $fields: 'id, trashed') as drive.File;
+        if (file.trashed != true) {
           return spreadsheetId;
         }
       } catch (e) {
-        spreadsheetId = null;
+        debugPrint("Spreadsheet cached ID invalid atau tidak ditemukan: $e");
       }
+      spreadsheetId = null;
+      await prefs.remove(_spreadsheetIdKey);
     }
 
-    // Klon Spreadsheet dari Template jika belum ada
+    // 2. Cari spreadsheet yang sudah ada di Google Drive (agar tidak duplikat saat login di device baru)
+    spreadsheetId = await _findExistingSpreadsheet(driveApi);
+
+    // 3. Klon Spreadsheet dari Template jika belum ada sama sekali di Drive
     if (spreadsheetId == null) {
       try {
-        const templateId = '1IMNImfbQvVlxqugBmwYfyAzH_Az-_CnoiRlTD2o6eXQ';
-        
         final copiedFile = await driveApi.files.copy(
-          drive.File()..name = 'Finote_Sync_Data', 
-          templateId
+          drive.File()..name = _spreadsheetName,
+          _templateId,
         );
         spreadsheetId = copiedFile.id;
-        
-        if (spreadsheetId != null) {
-          await prefs.setString(_spreadsheetIdKey, spreadsheetId);
-        }
       } catch (e) {
         debugPrint("Gagal klon template Google Sheets: $e");
         throw Exception("Gagal klon template: $e");
       }
     }
+
+    // Simpan ID yang valid ke cache lokal untuk mempercepat akses berikutnya
+    if (spreadsheetId != null) {
+      await prefs.setString(_spreadsheetIdKey, spreadsheetId);
+    }
+
     return spreadsheetId;
+  }
+
+  /// Mencari spreadsheet 'Finote_Sync_Data' yang aktif di Google Drive pengguna
+  Future<String?> _findExistingSpreadsheet(drive.DriveApi driveApi) async {
+    try {
+      final fileList = await driveApi.files.list(
+        q: "name = '$_spreadsheetName' and mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false",
+        orderBy: 'modifiedTime desc',
+        $fields: 'files(id, name, modifiedTime)',
+        pageSize: 1,
+      );
+
+      final files = fileList.files;
+      if (files != null && files.isNotEmpty) {
+        return files.first.id;
+      }
+    } catch (e) {
+      debugPrint("Gagal mencari spreadsheet yang sudah ada di Drive: $e");
+    }
+    return null;
   }
 
   /// Download seluruh baris transaksi dari Google Sheets tab 'RawData' (mulai A2)
@@ -118,7 +147,7 @@ class GoogleSheetsService {
 
     final sheetsApi = sheets.SheetsApi(client);
     try {
-      final response = await sheetsApi.spreadsheets.values.get(spreadsheetId, "'RawData'!A2:I");
+      final response = await sheetsApi.spreadsheets.values.get(spreadsheetId, "'RawData'!A2:J");
       final rows = response.values;
       
       if (rows == null || rows.isEmpty) return [];
@@ -135,7 +164,7 @@ class GoogleSheetsService {
           
           if (dateStr == null || dateStr.trim().isEmpty || nominalStr == null || nominalStr.trim().isEmpty) continue;
           
-          final date = DateTime.tryParse(dateStr.trim()) ?? DateTime.now();
+          final date = _parseDateTime(dateStr) ?? DateTime.now();
           final category = (categoryStr != null && categoryStr.trim().isNotEmpty) ? categoryStr.trim() : 'Lain-lain';
           final nominal = double.tryParse(nominalStr.replaceAll(RegExp(r'[^0-9.]'), '').trim()) ?? 0.0;
           if (nominal <= 0) continue;
@@ -143,7 +172,25 @@ class GoogleSheetsService {
           // Auto-generate transactionId jika diisi manual di browser tanpa ID
           final String txId = (row.length > 5 && row[5] != null && row[5].toString().trim().isNotEmpty)
               ? row[5].toString().trim()
-              : 'tx_sheets_${DateTime.now().millisecondsSinceEpoch}_$i';
+              : 'tx_sheets_${date.millisecondsSinceEpoch}_$i';
+
+          // Type (EXPENSE/INCOME): Dari kolom ke-10 (J) atau infer dari nama kategori
+          String type = 'EXPENSE';
+          if (row.length > 9 && row[9] != null && row[9].toString().trim().isNotEmpty) {
+            type = row[9].toString().trim().toUpperCase();
+          } else {
+            // Infer type jika kolom Type di Google Sheets lama belum ada
+            final lowerCat = category.toLowerCase();
+            if (lowerCat.contains('gaji') || 
+                lowerCat.contains('bonus') || 
+                lowerCat.contains('pemasukan') || 
+                lowerCat.contains('income') || 
+                lowerCat.contains('investasi') ||
+                lowerCat.contains('hibah') ||
+                lowerCat.contains('freelance')) {
+              type = 'INCOME';
+            }
+          }
 
           final model = TransactionModel()
             ..transactionId = txId
@@ -153,8 +200,9 @@ class GoogleSheetsService {
             ..note = (row.length > 3 && row[3] != null) ? row[3].toString() : ''
             ..inputSource = (row.length > 4 && row[4] != null && row[4].toString().isNotEmpty) ? row[4].toString() : 'MANUAL'
             ..imagePath = (row.length > 6 && row[6] != null && row[6].toString().isNotEmpty) ? row[6].toString() : null
-            ..lastUpdated = (row.length > 7 && row[7] != null && row[7].toString().isNotEmpty) ? (DateTime.tryParse(row[7].toString()) ?? DateTime.now()) : DateTime.now()
+            ..lastUpdated = (row.length > 7 && row[7] != null) ? (_parseDateTime(row[7].toString()) ?? DateTime.now()) : DateTime.now()
             ..isDeleted = (row.length > 8 && row[8] != null && row[8].toString().toUpperCase() == 'TRUE')
+            ..type = type
             ..isSynced = true;
             
           models.add(model);
@@ -169,6 +217,52 @@ class GoogleSheetsService {
     }
   }
 
+  /// Helper untuk parsing tanggal berbagai format (ISO-8601, Google Sheets format, UTC conversion)
+  DateTime? _parseDateTime(String? input) {
+    if (input == null || input.trim().isEmpty) return null;
+    final trimmed = input.trim();
+
+    // 1. Coba parse ISO-8601 standar
+    var parsed = DateTime.tryParse(trimmed);
+
+    // 2. Coba ganti spasi dengan 'T' (misal "2026-09-02 13:30:00")
+    parsed ??= DateTime.tryParse(trimmed.replaceAll(' ', 'T'));
+
+    // 3. Coba parse format garis miring (misal "DD/MM/YYYY" atau "YYYY/MM/DD")
+    if (parsed == null && trimmed.contains('/')) {
+      final parts = trimmed.split(' ');
+      final dateParts = parts[0].split('/');
+      if (dateParts.length == 3) {
+        int? day, month, year;
+        if (dateParts[0].length == 4) {
+          year = int.tryParse(dateParts[0]);
+          month = int.tryParse(dateParts[1]);
+          day = int.tryParse(dateParts[2]);
+        } else {
+          day = int.tryParse(dateParts[0]);
+          month = int.tryParse(dateParts[1]);
+          year = int.tryParse(dateParts[2]);
+        }
+        if (year != null && month != null && day != null) {
+          int hour = 0, minute = 0, second = 0;
+          if (parts.length > 1) {
+            final timeParts = parts[1].split(':');
+            if (timeParts.length >= 2) {
+              hour = int.tryParse(timeParts[0]) ?? 0;
+              minute = int.tryParse(timeParts[1]) ?? 0;
+              if (timeParts.length >= 3) {
+                second = int.tryParse(timeParts[2]) ?? 0;
+              }
+            }
+          }
+          parsed = DateTime(year, month, day, hour, minute, second);
+        }
+      }
+    }
+
+    return parsed?.toLocal();
+  }
+
   /// Full Overwrite: Hapus semua data lalu tulis ulang ke tab 'RawData' dari A2
   Future<void> pushToSheets(List<TransactionModel> pendingTransactions) async {
     final spreadsheetId = await ensureSpreadsheetExists();
@@ -178,24 +272,24 @@ class GoogleSheetsService {
 
     final sheetsApi = sheets.SheetsApi(client);
     try {
-      // 1. Tulis Header ke RawData!A1:I1
+      // 1. Tulis Header ke RawData!A1:J1
       final headers = [
-        ['Date', 'Category', 'Nominal', 'Note', 'InputSource', 'TransactionId', 'ImagePath', 'LastUpdated', 'IsDeleted']
+        ['Date', 'Category', 'Nominal', 'Note', 'InputSource', 'TransactionId', 'ImagePath', 'LastUpdated', 'IsDeleted', 'Type']
       ];
       await sheetsApi.spreadsheets.values.update(
         sheets.ValueRange(values: headers),
         spreadsheetId,
-        "'RawData'!A1:I1",
+        "'RawData'!A1:J1",
         valueInputOption: 'USER_ENTERED',
       );
 
       if (pendingTransactions.isEmpty) return;
 
-      // 2. Hapus bersih data lama A2:I10000
+      // 2. Hapus bersih data lama A2:J10000
       await sheetsApi.spreadsheets.values.clear(
         sheets.ClearValuesRequest(),
         spreadsheetId,
-        "'RawData'!A2:I10000",
+        "'RawData'!A2:J10000",
       );
 
       // 3. Siapkan baris data mentah
@@ -209,15 +303,16 @@ class GoogleSheetsService {
         t.imagePath ?? '',
         t.lastUpdated.toIso8601String(),
         t.isDeleted.toString().toUpperCase(),
+        t.type.toUpperCase(),
       ]).toList();
 
-      // 4. Tulis data mentah ke RawData!A2:I...
+      // 4. Tulis data mentah ke RawData!A2:J...
       final endRow = allRows.length + 1; // +1 karena mulai dari A2
       final valueRange = sheets.ValueRange(values: allRows);
       await sheetsApi.spreadsheets.values.update(
         valueRange,
         spreadsheetId,
-        "'RawData'!A2:I$endRow",
+        "'RawData'!A2:J$endRow",
         valueInputOption: 'USER_ENTERED',
       );
 

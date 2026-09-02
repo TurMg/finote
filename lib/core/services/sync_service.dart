@@ -44,8 +44,19 @@ class SyncService {
                 ..imagePath = cloudItem.imagePath
                 ..lastUpdated = cloudItem.lastUpdated
                 ..isDeleted = cloudItem.isDeleted
+                ..type = cloudItem.type
                 ..isSynced = true;
               await _isar.transactionModels.put(existingLocal);
+            } else {
+              // Jika lokal type masih 'EXPENSE' padahal kategorinya Pemasukan (akibat bug terdahulu), perbaiki otomatis
+              final lowerCat = existingLocal.category.toLowerCase();
+              if (existingLocal.type == 'EXPENSE' && 
+                  (lowerCat.contains('gaji') || lowerCat.contains('bonus') || lowerCat.contains('pemasukan') || lowerCat.contains('income') || lowerCat.contains('investasi') || lowerCat.contains('hibah') || lowerCat.contains('freelance'))) {
+                existingLocal
+                  ..type = 'INCOME'
+                  ..isSynced = false;
+                await _isar.transactionModels.put(existingLocal);
+              }
             }
           }
         }
